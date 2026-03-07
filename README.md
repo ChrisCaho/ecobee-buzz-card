@@ -1,5 +1,8 @@
 # Ecobee Buzz Card
 
+> **WORK IN PROGRESS — NOT TESTED**
+> This card is under active development and has not been fully tested. Use at your own risk.
+
 A Home Assistant custom card for ecobee thermostat control that integrates local ecobee data available via HomeKit with advanced ecobee metrics from [Beestat](https://beestat.io/) / [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge).
 
 Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climate-card) by **Traci S Aaron (Mystic369)**.
@@ -15,7 +18,7 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 
 ### HACS (Recommended)
 1. Open HACS → Frontend → 3 dots → Custom repositories
-2. Add `https://github.com/ChrisCaho/ha-total-ecobee-climate-card` as a Lovelace plugin
+2. Add `https://github.com/ChrisCaho/ecobee-buzz-card` as a Lovelace plugin
 3. Search for "Ecobee Buzz Card" and install
 4. Restart Home Assistant
 
