@@ -1,8 +1,115 @@
-# HA Total Climate Card
+# Ecobee Buzz Card
 
-A comprehensive Home Assistant custom card for total climate control featuring real-time thermal comfort monitoring, multi-zone thermostat management, dehumidifier control, and environmental tracking.
+A Home Assistant custom card for ecobee thermostat control that integrates local ecobee data available via HomeKit with advanced ecobee metrics from [Beestat](https://beestat.io/) / [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge).
 
-![Total Climate Card](screenshots/main-card.png)
+Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climate-card) by **Traci S Aaron (Mystic369)**.
+
+## What's Changed
+
+- **Renamed** from `aprilaire-thermostat-card` / `ha-total-climate-card` to `ecobee-buzz-card`
+- **HVAC action display** on thermostat side buttons — shows cooling, heating, or idle status in real-time
+- **CSS overflow fix** — card no longer overflows its container in HA sections layout
+- **Removed Real Feel / Smart Comfort** feature (not needed with BuzzBridge comfort index)
+
+## Installation
+
+### HACS (Recommended)
+1. Open HACS → Frontend → 3 dots → Custom repositories
+2. Add `https://github.com/ChrisCaho/ha-total-ecobee-climate-card` as a Lovelace plugin
+3. Search for "Ecobee Buzz Card" and install
+4. Restart Home Assistant
+
+### Manual
+1. Download `ecobee-buzz-card.js`
+2. Copy to `/config/www/ecobee-buzz-card.js`
+3. Add to Lovelace resources:
+   ```yaml
+   resources:
+     - url: /local/ecobee-buzz-card.js
+       type: module
+   ```
+4. Restart Home Assistant
+
+## Dashboard Configuration
+
+```yaml
+type: custom:ecobee-buzz-card
+name: Home
+thermostats:
+  - entity: climate.ecob_home
+    name: Home
+indoor_heat_index: sensor.ecob_home_feels_like
+weather_entity: weather.openweathermap
+outdoor_temperature: sensor.openweathermap_temperature
+outdoor_humidity: sensor.openweathermap_humidity
+outdoor_heat_index: sensor.outdoor_feels_like
+bottom_buttons:
+  - label: HUMIDITY
+    icon: 💧
+    entity: climate.ecob_home
+    attribute: current_humidity
+    unit: "%"
+    thresholds:
+      warning_low: 35
+      warning_high: 65
+      critical_low: 25
+      critical_high: 75
+    tap_action:
+      action: more-info
+  - label: UV INDEX
+    icon: ☀️
+    entity: sensor.openweathermap_uv_index
+    unit: ""
+    thresholds:
+      warning_high: 6
+      critical_high: 10
+    tap_action:
+      action: more-info
+  - label: PRESSURE
+    icon: 🌡️
+    entity: weather.openweathermap
+    attribute: pressure
+    unit: " inHg"
+    decimal_places: 1
+    thresholds:
+      warning_low: 29.5
+      warning_high: 30.2
+      critical_low: 29
+      critical_high: 30.5
+    tap_action:
+      action: more-info
+  - label: WIND
+    icon: 💨
+    entity: weather.openweathermap
+    attribute: wind_speed
+    unit: " MPh"
+    thresholds:
+      warning_high: 25
+      critical_high: 40
+    tap_action:
+      action: more-info
+  - label: RAIN
+    icon: 🌧️
+    entity: sensor.openweathermap_rain
+    unit: " In/Hr"
+    thresholds:
+      warning_high: 1
+      critical_high: 2
+    tap_action:
+      action: more-info
+cards:
+  - show_current: true
+    show_forecast: true
+    type: weather-forecast
+    entity: weather.openweathermap
+    forecast_type: twice_daily
+```
+
+---
+
+# Original Documentation (HA Total Climate Card)
+
+> The following documentation is from the original project by Traci S Aaron (Mystic369).
 
 ## Features
 

@@ -1,9 +1,9 @@
-console.log('Aprilaire Thermostat Card: Script loading started...');
+console.log('Ecobee Buzz Card: Script loading started...');
 
-class AprilaireThermostatCard extends HTMLElement {
+class EcobeeBuzzCard extends HTMLElement {
   constructor() {
     super();
-    console.log('Aprilaire Thermostat Card: Constructor called');
+    console.log('Ecobee Buzz Card: Constructor called');
     this.attachShadow({ mode: 'open' });
     this.activeEntity = null;
     this.viewMode = 'thermostat';
@@ -11,7 +11,7 @@ class AprilaireThermostatCard extends HTMLElement {
   }
 
   setConfig(config) {
-    console.log('Aprilaire Thermostat Card: setConfig called', config);
+    console.log('Ecobee Buzz Card: setConfig called', config);
     if (!config.thermostats || config.thermostats.length === 0) {
       throw new Error('You need to define at least one thermostat');
     }
@@ -27,7 +27,7 @@ class AprilaireThermostatCard extends HTMLElement {
     };
     
     this.activeEntity = this.config.thermostats.find(t => t.entity.startsWith('climate.'))?.entity || this.config.thermostats[0].entity;
-    console.log('Aprilaire Thermostat Card: Active entity set to', this.activeEntity);
+    console.log('Ecobee Buzz Card: Active entity set to', this.activeEntity);
   }
 
   set hass(hass) {
@@ -64,8 +64,9 @@ class AprilaireThermostatCard extends HTMLElement {
         :host {
           display: block;
           width: 100%;
-          min-width: 450px;
+          min-width: 0;
           contain: layout style paint;
+          overflow: hidden;
         }
         
         @media (max-width: 700px) {
@@ -96,7 +97,7 @@ class AprilaireThermostatCard extends HTMLElement {
         
         @media (max-width: 500px) {
           :host {
-            min-width: 300px;
+            min-width: 0;
           }
           
           .main-content {
@@ -857,7 +858,7 @@ class AprilaireThermostatCard extends HTMLElement {
       </div>
     `;
     
-    console.log('Aprilaire Thermostat Card: Render complete');
+    console.log('Ecobee Buzz Card: Render complete');
     this.content = this.shadowRoot.querySelector('.card-container');
     this.renderSideControls();
     this.renderBottomButtons();
@@ -936,7 +937,7 @@ class AprilaireThermostatCard extends HTMLElement {
       html += `
         <button class="side-btn thermostat-3 ${isActive ? 'active' : ''}" id="thermostat-btn-0">
           <span class="side-btn-icon">🌡️</span>
-          <span class="side-btn-text">${thermostats[0].name || 'Upstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span></span>
+          <span class="side-btn-text">${thermostats[0].name || 'Upstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span><br/><span class="side-btn-label" id="thermostat-hvac-0">${this._hass && this._hass.states[thermostats[0].entity] ? this._hass.states[thermostats[0].entity].attributes.hvac_action || '' : ''}</span></span>
         </button>
       `;
     }
@@ -957,7 +958,7 @@ class AprilaireThermostatCard extends HTMLElement {
       html += `
         <button class="side-btn thermostat-2 ${isActive ? 'active' : ''}" id="thermostat-btn-1">
           <span class="side-btn-icon">🌡️</span>
-          <span class="side-btn-text">${thermostats[1].name || 'Downstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span></span>
+          <span class="side-btn-text">${thermostats[1].name || 'Downstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span><br/><span class="side-btn-label" id="thermostat-hvac-1">${this._hass && this._hass.states[thermostats[1].entity] ? this._hass.states[thermostats[1].entity].attributes.hvac_action || '' : ''}</span></span>
         </button>
       `;
     }
@@ -1126,6 +1127,7 @@ class AprilaireThermostatCard extends HTMLElement {
       }
     }
     
+    let thermostatIdx = 0;
     this.config.thermostats.forEach((thermostat) => {
       if (thermostat.entity.startsWith('climate.')) {
         const btn = this.shadowRoot.querySelector(`[onclick*="${thermostat.entity}"]`);
@@ -1137,6 +1139,12 @@ class AprilaireThermostatCard extends HTMLElement {
           }
           btn.classList.toggle('active', isActive);
         }
+        const hvacLabel = this.shadowRoot.getElementById(`thermostat-hvac-${thermostatIdx}`);
+        if (hvacLabel) {
+          const entity = this._hass.states[thermostat.entity];
+          hvacLabel.textContent = entity && entity.attributes.hvac_action ? entity.attributes.hvac_action : '';
+        }
+        thermostatIdx++;
       }
     });
   }
@@ -1623,14 +1631,14 @@ class AprilaireThermostatCard extends HTMLElement {
   }
 }
 
-console.log('Aprilaire Thermostat Card: Defining custom element...');
-customElements.define('aprilaire-thermostat-card', AprilaireThermostatCard);
-console.log('Aprilaire Thermostat Card: Custom element defined successfully!');
+console.log('Ecobee Buzz Card: Defining custom element...');
+customElements.define('ecobee-buzz-card', EcobeeBuzzCard);
+console.log('Ecobee Buzz Card: Custom element defined successfully!');
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: 'aprilaire-thermostat-card',
-  name: 'Aprilaire Thermostat Card',
-  description: 'A custom card that mimics the Aprilaire thermostat interface'
+  type: 'ecobee-buzz-card',
+  name: 'Ecobee Buzz Card',
+  description: 'Climate control card for ecobee thermostats with HomeKit and BuzzBridge integration'
 });
-console.log('Aprilaire Thermostat Card: Registered with Home Assistant');
+console.log('Ecobee Buzz Card: Registered with Home Assistant');
