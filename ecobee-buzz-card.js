@@ -302,7 +302,7 @@ class EcobeeBuzzCard extends HTMLElement {
           box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 4px;
         }
         
         .current-temp {
@@ -332,29 +332,24 @@ class EcobeeBuzzCard extends HTMLElement {
           font-size: 11px;
           opacity: 0.85;
           font-weight: 500;
+          line-height: 1.3;
         }
 
         .outdoor-section {
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
+          flex-direction: column;
+          gap: 2px;
           padding-top: 10px;
           border-top: 1px solid rgba(100,180,255,0.12);
         }
-        
+
         .outdoor-temp {
           font-size: 28px;
           font-weight: 200;
-          line-height: 1;
+          line-height: 0.9;
           letter-spacing: -1px;
         }
-        
-        .outdoor-humidity {
-          font-size: 11px;
-          opacity: 0.85;
-        }
-        
+
         .outdoor-label {
           font-size: 10px;
           opacity: 0.75;
@@ -781,20 +776,16 @@ class EcobeeBuzzCard extends HTMLElement {
               <div class="current-temp">
                 <span id="current-temp">--</span><span class="temp-unit">°</span>
               </div>
-              <div class="detail-line" id="humidity">Rel Humidity: --%</div>
+              <div class="detail-line" id="humidity">Humidity: --%</div>
               <div class="detail-line" id="indoor-feels-like">Feels Like: --°</div>
 
               <div class="outdoor-section">
                 <div class="section-label" id="outdoor-label">Outdoor</div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div class="outdoor-temp">
-                    <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
-                  </div>
-                  <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-                    <div class="detail-line" id="outdoor-humidity">--% RH</div>
-                    <div class="detail-line" id="outdoor-feels-like">Feels: --°</div>
-                  </div>
+                <div class="outdoor-temp">
+                  <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
                 </div>
+                <div class="detail-line" id="outdoor-humidity">Humidity: --%</div>
+                <div class="detail-line" id="outdoor-feels-like">Feels Like: --°</div>
               </div>
             </div>
             
@@ -1069,7 +1060,7 @@ class EcobeeBuzzCard extends HTMLElement {
       if (coolTempEl) coolTempEl.textContent = '--';
     }
     
-    if (humidityEl && entity.attributes.current_humidity) humidityEl.textContent = `Rel Humidity: ${entity.attributes.current_humidity}%`;
+    if (humidityEl && entity.attributes.current_humidity) humidityEl.textContent = `Humidity: ${entity.attributes.current_humidity}%`;
 
     const fanMode = entity.attributes.fan_mode || 'auto';
     const hvacMode = entity.state || 'off';
@@ -1087,7 +1078,7 @@ class EcobeeBuzzCard extends HTMLElement {
       outdoorTempEl.textContent = Math.round(parseFloat(outdoorTempEntity.state));
     }
     if (outdoorHumidityEl && outdoorHumidityEntity) {
-      outdoorHumidityEl.textContent = `${Math.round(parseFloat(outdoorHumidityEntity.state))}% RH`;
+      outdoorHumidityEl.textContent = `Humidity: ${Math.round(parseFloat(outdoorHumidityEntity.state))}%`;
     }
     
     // Update feels-like temperatures
@@ -1104,9 +1095,9 @@ class EcobeeBuzzCard extends HTMLElement {
     if (outdoorFeelsLikeEl && this.config.outdoor_heat_index) {
       const outdoorHeatIndexEntity = this._hass.states[this.config.outdoor_heat_index];
       if (outdoorHeatIndexEntity && outdoorHeatIndexEntity.state && outdoorHeatIndexEntity.state !== 'unavailable' && !isNaN(outdoorHeatIndexEntity.state)) {
-        outdoorFeelsLikeEl.textContent = `Feels: ${Math.round(parseFloat(outdoorHeatIndexEntity.state))}°`;
+        outdoorFeelsLikeEl.textContent = `Feels Like: ${Math.round(parseFloat(outdoorHeatIndexEntity.state))}°`;
       } else {
-        outdoorFeelsLikeEl.textContent = 'Feels: --°';
+        outdoorFeelsLikeEl.textContent = 'Feels Like: --°';
       }
     }
     
@@ -1207,7 +1198,7 @@ class EcobeeBuzzCard extends HTMLElement {
         currentTempEl.textContent = Math.round(weatherEntity.attributes.temperature);
       }
       if (humidityEl && weatherEntity.attributes.humidity) {
-        humidityEl.textContent = `Rel Humidity: ${weatherEntity.attributes.humidity}%`;
+        humidityEl.textContent = `Humidity: ${weatherEntity.attributes.humidity}%`;
       }
       if (indoorFeelsLikeEl && weatherEntity.state) {
         indoorFeelsLikeEl.textContent = weatherEntity.state.charAt(0).toUpperCase() + weatherEntity.state.slice(1).replace('-', ' ');
