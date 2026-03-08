@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.4';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.5';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -1348,10 +1348,13 @@ class EcobeeBuzzCard extends HTMLElement {
     const state = holdEntity.state;
     const attrs = holdEntity.attributes || {};
 
+    // Strip "hold" prefix from state since button already shows HOLD
+    const cleaned = state.replace(/^hold\s*/i, '').trim();
+    const lower = cleaned.toLowerCase();
+
     // Check for permanent/indefinite hold
-    const lower = state.toLowerCase();
-    if (lower === 'permanent' || lower === 'indefinite' || lower === 'true') {
-      return 'Forever';
+    if (lower === 'permanent' || lower === 'indefinite' || lower === 'true' || lower === '') {
+      return 'Indefinite';
     }
 
     // Check for end time in attributes (e.g., hold_until, end_time)
@@ -1364,16 +1367,16 @@ class EcobeeBuzzCard extends HTMLElement {
       return this.formatDuration(diffMs);
     }
 
-    // Check if state itself is a datetime
-    const parsed = Date.parse(state);
+    // Check if state or cleaned text is a datetime
+    const parsed = Date.parse(cleaned);
     if (!isNaN(parsed)) {
       const diffMs = parsed - Date.now();
       if (diffMs <= 0) return 'Expiring';
       return this.formatDuration(diffMs);
     }
 
-    // Fallback: show the raw state
-    return state;
+    // Fallback: show cleaned state
+    return cleaned || state;
   }
 
   formatDuration(ms) {
