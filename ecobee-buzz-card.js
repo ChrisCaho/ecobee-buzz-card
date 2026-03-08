@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.2';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.3';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -1304,13 +1304,11 @@ class EcobeeBuzzCard extends HTMLElement {
     if (!holdBtn) return;
 
     const holdText = this.shadowRoot.getElementById('hold-mode-text');
-    const entity = this._hass.states[this.activeEntity];
-    const mode = entity ? entity.state.toUpperCase().replace('_', ' ') : '--';
 
-    // If no hold_status_entity configured, just show current HVAC mode
+    // If no hold_status_entity configured, just show PROGRAM
     if (!this.config.hold_status_entity) {
       holdBtn.className = 'hold-status-btn';
-      if (holdText) holdText.textContent = mode;
+      if (holdText) holdText.textContent = 'PROGRAM';
       return;
     }
 
@@ -1318,7 +1316,7 @@ class EcobeeBuzzCard extends HTMLElement {
 
     if (!holdEntity || holdEntity.state === 'unavailable') {
       holdBtn.className = 'hold-status-btn';
-      if (holdText) holdText.textContent = mode;
+      if (holdText) holdText.textContent = 'PROGRAM';
       return;
     }
 
@@ -1328,12 +1326,54 @@ class EcobeeBuzzCard extends HTMLElement {
     if (isActive) {
       holdBtn.className = 'hold-status-btn has-hold';
       if (holdText) {
-        holdText.innerHTML = `<span class="hold-line1">HOLD</span><span class="hold-line2">${holdEntity.state}</span>`;
+        const duration = this.formatHoldDuration(holdEntity);
+        holdText.innerHTML = `<span class="hold-line1">HOLD</span><span class="hold-line2">${duration}</span>`;
       }
     } else {
       holdBtn.className = 'hold-status-btn';
-      if (holdText) holdText.textContent = mode;
+      if (holdText) holdText.textContent = 'PROGRAM';
     }
+  }
+
+  formatHoldDuration(holdEntity) {
+    const state = holdEntity.state;
+    const attrs = holdEntity.attributes || {};
+
+    // Check for permanent/indefinite hold
+    const lower = state.toLowerCase();
+    if (lower === 'permanent' || lower === 'indefinite' || lower === 'true') {
+      return 'Forever';
+    }
+
+    // Check for end time in attributes (e.g., hold_until, end_time)
+    const endTime = attrs.hold_until || attrs.end_time || attrs.expires || null;
+    if (endTime) {
+      const end = new Date(endTime);
+      const now = new Date();
+      const diffMs = end - now;
+      if (diffMs <= 0) return 'Expiring';
+      return this.formatDuration(diffMs);
+    }
+
+    // Check if state itself is a datetime
+    const parsed = Date.parse(state);
+    if (!isNaN(parsed)) {
+      const diffMs = parsed - Date.now();
+      if (diffMs <= 0) return 'Expiring';
+      return this.formatDuration(diffMs);
+    }
+
+    // Fallback: show the raw state
+    return state;
+  }
+
+  formatDuration(ms) {
+    const minutes = Math.round(ms / 60000);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    const days = Math.round(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''}`;
   }
 
   clearHold() {
