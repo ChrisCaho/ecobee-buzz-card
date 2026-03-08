@@ -328,6 +328,12 @@ class EcobeeBuzzCard extends HTMLElement {
           margin-bottom: 2px;
         }
 
+        .detail-group {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+
         .detail-line {
           font-size: 11px;
           opacity: 0.85;
@@ -772,20 +778,24 @@ class EcobeeBuzzCard extends HTMLElement {
         <div class="main-content">
           <div class="temp-section">
             <div class="temp-display" id="temp-display">
-              <div class="section-label" id="location-label">Indoor</div>
               <div class="current-temp">
                 <span id="current-temp">--</span><span class="temp-unit">°</span>
               </div>
-              <div class="detail-line" id="humidity">Humidity: --%</div>
-              <div class="detail-line" id="indoor-feels-like">Feels Like: --°</div>
+              <div class="detail-group">
+                <div class="section-label" id="location-label">Indoor</div>
+                <div class="detail-line" id="humidity">Humidity: --%</div>
+                <div class="detail-line" id="indoor-feels-like">Feels Like: --°</div>
+              </div>
 
               <div class="outdoor-section">
-                <div class="section-label" id="outdoor-label">Outdoor</div>
                 <div class="outdoor-temp">
                   <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
                 </div>
-                <div class="detail-line" id="outdoor-humidity">Humidity: --%</div>
-                <div class="detail-line" id="outdoor-feels-like">Feels Like: --°</div>
+                <div class="detail-group">
+                  <div class="section-label" id="outdoor-label">Outdoor</div>
+                  <div class="detail-line" id="outdoor-humidity">Humidity: --%</div>
+                  <div class="detail-line" id="outdoor-feels-like">Feels Like: --°</div>
+                </div>
               </div>
             </div>
             
