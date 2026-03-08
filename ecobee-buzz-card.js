@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.0';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.1';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
