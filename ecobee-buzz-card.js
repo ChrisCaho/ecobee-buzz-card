@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.6';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.7';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -1336,7 +1336,8 @@ class EcobeeBuzzCard extends HTMLElement {
       holdBtn.className = 'hold-status-btn has-hold';
       if (holdText) {
         const duration = this.formatHoldDuration(holdEntity);
-        holdText.innerHTML = `<span class="hold-line1">HOLD</span><span class="hold-line2">${duration}</span>`;
+        console.log('Ecobee Buzz Card: Hold active, duration:', duration, 'attrs:', JSON.stringify(holdEntity.attributes));
+        holdText.innerHTML = '<span class="hold-line1">HOLD</span><span class="hold-line2">' + duration + '</span>';
       }
     } else {
       holdBtn.className = 'hold-status-btn';
