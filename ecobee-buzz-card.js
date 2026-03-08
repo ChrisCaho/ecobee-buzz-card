@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.1';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.2';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -426,47 +426,47 @@ class EcobeeBuzzCard extends HTMLElement {
         }
         
         .hold-status-btn {
-          margin-top: 8px;
-          padding: 8px 16px;
-          border-radius: 10px;
-          text-align: center;
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: rgba(255,255,255,0.9);
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-          display: none;
-        }
-
-        .hold-status-btn.visible {
-          display: block;
-        }
-
-        .hold-status-btn.no-hold {
           background: linear-gradient(145deg, rgba(34,120,74,0.4), rgba(24,80,54,0.3));
           border: 1px solid rgba(74,222,128,0.3);
+          border-radius: 12px;
+          padding: 10px 12px;
+          color: white;
+          cursor: default;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          min-height: 42px;
+          margin-top: 10px;
+          text-align: center;
         }
 
         .hold-status-btn.has-hold {
           background: linear-gradient(145deg, rgba(140,120,30,0.4), rgba(100,85,20,0.3));
           border: 1px solid rgba(234,200,70,0.3);
           cursor: pointer;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .hold-mode-text {
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 1px;
+          text-transform: uppercase;
         }
 
         .hold-line1 {
-          display: block;
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 1px;
         }
 
         .hold-line2 {
-          display: block;
           font-size: 10px;
           opacity: 0.85;
-          margin-top: 2px;
         }
 
         .hold-confirm-overlay {
@@ -1303,18 +1303,22 @@ class EcobeeBuzzCard extends HTMLElement {
     const holdBtn = this.shadowRoot.getElementById('hold-status-btn');
     if (!holdBtn) return;
 
+    const holdText = this.shadowRoot.getElementById('hold-mode-text');
+    const entity = this._hass.states[this.activeEntity];
+    const mode = entity ? entity.state.toUpperCase().replace('_', ' ') : '--';
+
+    // If no hold_status_entity configured, just show current HVAC mode
     if (!this.config.hold_status_entity) {
-      holdBtn.classList.remove('visible');
+      holdBtn.className = 'hold-status-btn';
+      if (holdText) holdText.textContent = mode;
       return;
     }
 
-    holdBtn.classList.add('visible');
     const holdEntity = this._hass.states[this.config.hold_status_entity];
-    const holdText = this.shadowRoot.getElementById('hold-mode-text');
 
     if (!holdEntity || holdEntity.state === 'unavailable') {
-      holdBtn.className = 'hold-status-btn visible no-hold';
-      if (holdText) holdText.textContent = 'UNAVAILABLE';
+      holdBtn.className = 'hold-status-btn';
+      if (holdText) holdText.textContent = mode;
       return;
     }
 
@@ -1322,14 +1326,12 @@ class EcobeeBuzzCard extends HTMLElement {
       (holdEntity.state !== 'None' && holdEntity.state !== 'none' && holdEntity.state !== '');
 
     if (isActive) {
-      holdBtn.className = 'hold-status-btn visible has-hold';
+      holdBtn.className = 'hold-status-btn has-hold';
       if (holdText) {
         holdText.innerHTML = `<span class="hold-line1">HOLD</span><span class="hold-line2">${holdEntity.state}</span>`;
       }
     } else {
-      holdBtn.className = 'hold-status-btn visible no-hold';
-      const entity = this._hass.states[this.activeEntity];
-      const mode = entity ? entity.state.toUpperCase().replace('_', ' ') : '--';
+      holdBtn.className = 'hold-status-btn';
       if (holdText) holdText.textContent = mode;
     }
   }
