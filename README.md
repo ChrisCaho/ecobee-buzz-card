@@ -5,10 +5,18 @@
 
 A Home Assistant custom card for ecobee thermostat control that integrates local ecobee data available via HomeKit with advanced ecobee metrics from [Beestat](https://beestat.io/) / [BuzzBridge](https://github.com/ChrisCaho/BuzzBridge).
 
-Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climate-card) by **Traci S Aaron (Mystic369)**.
+Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climate-card) by **Traci S Aaron (Mystic369)**. Thank you to Traci for creating the original card and making it open source — this fork builds on that excellent foundation.
 
-## What's Changed
+## What's Changed (from original)
 
+### v2.0.0 — Single-Thermostat Refactor
+- **Single thermostat per card** — Each card now controls one climate entity via the `entity` config key. Use separate cards for multiple thermostats/zones. The old `thermostats` array config is still accepted for backwards compatibility but is deprecated.
+- **HVAC status side button** — The side panel now shows a single status button displaying the real-time HVAC action (cooling, heating, fan, idle). Tap to open the climate entity's detail popup.
+- **Optional dehumidifier support** — Add `dehumidifier_entity` to show a dehumidifier control button in the side panel.
+- **Optional ERV support** — Add `erv_entity` to show an Energy Recovery Ventilator status button in the side panel. Tap to open the ERV entity's detail popup.
+- **Removed multi-thermostat switching** — No longer uses side buttons to switch between thermostats. This fixes the overflow issue when 3+ thermostats were configured.
+
+### v1.0.0 — Initial Fork
 - **Renamed** from `aprilaire-thermostat-card` / `ha-total-climate-card` to `ecobee-buzz-card`
 - **HVAC action display** on thermostat side buttons — shows cooling, heating, or idle status in real-time
 - **CSS overflow fix** — card no longer overflows its container in HA sections layout
@@ -17,7 +25,7 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 ## Installation
 
 ### HACS (Recommended)
-1. Open HACS → Frontend → 3 dots → Custom repositories
+1. Open HACS -> Frontend -> 3 dots -> Custom repositories
 2. Add `https://github.com/ChrisCaho/ecobee-buzz-card` as a Lovelace plugin
 3. Search for "Ecobee Buzz Card" and install
 4. Restart Home Assistant
@@ -33,23 +41,61 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
    ```
 4. Restart Home Assistant
 
-## Dashboard Configuration
+## Configuration
+
+### Card Options
+
+| Option | Type | Required | Default | Description |
+|--------|------|----------|---------|-------------|
+| `type` | string | Yes | | Must be `custom:ecobee-buzz-card` |
+| `entity` | string | Yes | | Climate entity ID (e.g., `climate.thermostat`) |
+| `name` | string | No | `Thermostat` | Card title |
+| `weather_entity` | string | No | `weather.pirateweather` | Weather entity for forecast |
+| `outdoor_temperature` | string | No | | Outdoor temperature sensor |
+| `outdoor_humidity` | string | No | | Outdoor humidity sensor |
+| `indoor_heat_index` | string | No | | Indoor thermal comfort sensor |
+| `outdoor_heat_index` | string | No | | Outdoor thermal comfort sensor |
+| `dehumidifier_entity` | string | No | | Dehumidifier entity ID |
+| `erv_entity` | string | No | | ERV entity ID (fan or switch domain) |
+| `bottom_buttons` | list | No | | Custom monitoring buttons (up to 5) |
+
+### Minimal Configuration
+
+```yaml
+type: custom:ecobee-buzz-card
+name: Living Room
+entity: climate.thermostat
+weather_entity: weather.home
+```
+
+### With Dehumidifier and ERV
 
 ```yaml
 type: custom:ecobee-buzz-card
 name: Home
-thermostats:
-  - entity: climate.ecob_home
-    name: Home
-indoor_heat_index: sensor.ecob_home_feels_like
+entity: climate.thermostat
+dehumidifier_entity: humidifier.whole_house_dehumidifier
+erv_entity: fan.erv
+weather_entity: weather.home
+outdoor_temperature: sensor.outdoor_temp
+outdoor_humidity: sensor.outdoor_humidity
+```
+
+### Full Example with Bottom Buttons
+
+```yaml
+type: custom:ecobee-buzz-card
+name: Home
+entity: climate.thermostat
 weather_entity: weather.openweathermap
 outdoor_temperature: sensor.openweathermap_temperature
 outdoor_humidity: sensor.openweathermap_humidity
+indoor_heat_index: sensor.thermal_comfort_heat_index
 outdoor_heat_index: sensor.outdoor_feels_like
 bottom_buttons:
   - label: HUMIDITY
-    icon: 💧
-    entity: climate.ecob_home
+    icon: "\U0001F4A7"
+    entity: climate.thermostat
     attribute: current_humidity
     unit: "%"
     thresholds:
@@ -60,7 +106,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: UV INDEX
-    icon: ☀️
+    icon: "\u2600\uFE0F"
     entity: sensor.openweathermap_uv_index
     unit: ""
     thresholds:
@@ -69,7 +115,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: PRESSURE
-    icon: 🌡️
+    icon: "\U0001F321"
     entity: weather.openweathermap
     attribute: pressure
     unit: " inHg"
@@ -82,7 +128,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: WIND
-    icon: 💨
+    icon: "\U0001F4A8"
     entity: weather.openweathermap
     attribute: wind_speed
     unit: " MPh"
@@ -92,7 +138,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: RAIN
-    icon: 🌧️
+    icon: "\U0001F327"
     entity: sensor.openweathermap_rain
     unit: " In/Hr"
     thresholds:
@@ -100,13 +146,30 @@ bottom_buttons:
       critical_high: 2
     tap_action:
       action: more-info
-cards:
-  - show_current: true
-    show_forecast: true
-    type: weather-forecast
-    entity: weather.openweathermap
-    forecast_type: twice_daily
 ```
+
+### Migrating from v1 (thermostats array)
+
+The old `thermostats` array config still works but is deprecated. To migrate:
+
+**Before:**
+```yaml
+thermostats:
+  - entity: climate.thermostat
+    name: Home
+  - entity: humidifier.dehumidifier
+    name: Dehumidifier
+```
+
+**After:**
+```yaml
+entity: climate.thermostat
+dehumidifier_entity: humidifier.dehumidifier
+```
+
+If you had multiple thermostats in one card, create a separate card for each thermostat.
+
+See [example-config.yaml](example-config.yaml) for more configuration examples including bottom button thresholds and tap actions.
 
 ---
 

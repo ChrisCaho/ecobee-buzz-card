@@ -1,58 +1,57 @@
-# Example Configurations for HA Total Climate Card
+# Example Configurations for Ecobee Buzz Card
 
 ## Minimal Configuration
 # Basic setup with just thermostat control
 
 ```yaml
-type: custom:ha-total-climate-card
-name: Climate Control
-thermostats:
-  - entity: climate.thermostat
-    name: Main Thermostat
+type: custom:ecobee-buzz-card
+name: Living Room
+entity: climate.thermostat
 weather_entity: weather.home
 ```
 
-## Multi-Zone Configuration
-# Two thermostats with separate control
+## With Outdoor Sensors
 
 ```yaml
-type: custom:ha-total-climate-card
+type: custom:ecobee-buzz-card
 name: Home Climate
-thermostats:
-  - entity: climate.upstairs_thermostat
-    name: Upstairs
-  - entity: climate.downstairs_thermostat
-    name: Downstairs
+entity: climate.thermostat
 weather_entity: weather.home
 outdoor_temperature: sensor.outdoor_temp
 outdoor_humidity: sensor.outdoor_humidity
 ```
 
 ## With Dehumidifier
-# Adding humidity control
 
 ```yaml
-type: custom:ha-total-climate-card
+type: custom:ecobee-buzz-card
 name: Total Climate
-thermostats:
-  - entity: climate.thermostat
-    name: Main Thermostat
-  - entity: humidifier.whole_house_dehumidifier
-    name: Dehumidifier
+entity: climate.thermostat
+dehumidifier_entity: humidifier.whole_house_dehumidifier
+weather_entity: weather.home
+outdoor_temperature: sensor.outdoor_temp
+outdoor_humidity: sensor.outdoor_humidity
+```
+
+## With ERV (Energy Recovery Ventilator)
+
+```yaml
+type: custom:ecobee-buzz-card
+name: Home Climate
+entity: climate.thermostat
+erv_entity: fan.erv
 weather_entity: weather.home
 outdoor_temperature: sensor.outdoor_temp
 outdoor_humidity: sensor.outdoor_humidity
 ```
 
 ## With Thermal Comfort (Feels Like Temps)
-# Requires Thermal Comfort integration
+# Requires Thermal Comfort integration from HACS
 
 ```yaml
-type: custom:ha-total-climate-card
+type: custom:ecobee-buzz-card
 name: Comfort Control
-thermostats:
-  - entity: climate.thermostat
-    name: Main Thermostat
+entity: climate.thermostat
 weather_entity: weather.home
 outdoor_temperature: sensor.outdoor_temp
 outdoor_humidity: sensor.outdoor_humidity
@@ -64,15 +63,13 @@ outdoor_heat_index: sensor.thermal_comfort_heat_index_outdoor
 # Bottom buttons for environmental monitoring
 
 ```yaml
-type: custom:ha-total-climate-card
+type: custom:ecobee-buzz-card
 name: Climate Control
-thermostats:
-  - entity: climate.thermostat
-    name: Main Thermostat
+entity: climate.thermostat
 weather_entity: weather.home
 bottom_buttons:
   - label: PRESSURE
-    icon: 🌡️
+    icon: "\U0001F321"
     entity: weather.home
     attribute: pressure
     unit: " inHg"
@@ -83,7 +80,7 @@ bottom_buttons:
       critical_low: 29.0
       critical_high: 30.5
   - label: HUMIDITY
-    icon: 💧
+    icon: "\U0001F4A7"
     entity: climate.thermostat
     attribute: current_humidity
     unit: "%"
@@ -91,24 +88,20 @@ bottom_buttons:
       warning_low: 35
       warning_high: 65
   - label: TEMP
-    icon: 🌡️
+    icon: "\U0001F321"
     entity: sensor.outdoor_temp
-    unit: "°F"
+    unit: "\u00B0F"
 ```
 
 ## Complete Configuration
 # All features enabled
 
 ```yaml
-type: custom:ha-total-climate-card
+type: custom:ecobee-buzz-card
 name: Family Room
-thermostats:
-  - entity: climate.upstairs_thermostat
-    name: Upstairs
-  - entity: climate.downstairs_thermostat
-    name: Downstairs
-  - entity: humidifier.dehumidifier
-    name: Dehumidifier Control
+entity: climate.upstairs_thermostat
+dehumidifier_entity: humidifier.dehumidifier
+erv_entity: fan.erv
 weather_entity: weather.pirateweather
 outdoor_temperature: sensor.outdoor_temperature
 outdoor_humidity: sensor.outdoor_humidity
@@ -116,7 +109,7 @@ indoor_heat_index: sensor.thermal_comfort_heat_index
 outdoor_heat_index: sensor.thermal_comfort_heat_index_2
 bottom_buttons:
   - label: PRESSURE
-    icon: 🌡️
+    icon: "\U0001F321"
     entity: weather.pirateweather
     attribute: pressure
     unit: " inHg"
@@ -129,7 +122,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: HUMIDITY
-    icon: 💧
+    icon: "\U0001F4A7"
     entity: climate.upstairs_thermostat
     attribute: current_humidity
     unit: "%"
@@ -141,7 +134,7 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: FILTER
-    icon: 🔧
+    icon: "\U0001F527"
     entity: input_number.filter_days_remaining
     unit: " days"
     thresholds:
@@ -154,7 +147,7 @@ bottom_buttons:
         entity_id: input_number.filter_days_remaining
         value: 90
   - label: CO2
-    icon: 💨
+    icon: "\U0001F4A8"
     entity: sensor.co2_level
     unit: " ppm"
     thresholds:
@@ -163,16 +156,8 @@ bottom_buttons:
     tap_action:
       action: more-info
   - label: EMERG HEAT
-    icon: 🔥
+    icon: "\U0001F525"
     entity: switch.emergency_heat
-cards:
-  - show_current: true
-    show_forecast: true
-    type: weather-forecast
-    entity: weather.pirateweather
-    forecast_type: twice_daily
-    secondary_info_attribute: precipitation_unit
-    forecast_slots: 4
 ```
 
 ## Button Tap Actions

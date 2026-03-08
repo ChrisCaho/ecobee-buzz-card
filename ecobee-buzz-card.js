@@ -12,21 +12,38 @@ class EcobeeBuzzCard extends HTMLElement {
 
   setConfig(config) {
     console.log('Ecobee Buzz Card: setConfig called', config);
-    if (!config.thermostats || config.thermostats.length === 0) {
-      throw new Error('You need to define at least one thermostat');
+
+    // Backwards compat: migrate old thermostats array to new single-entity config
+    let entity = config.entity;
+    let dehumidifier_entity = config.dehumidifier_entity;
+    let erv_entity = config.erv_entity;
+
+    if (!entity && config.thermostats && config.thermostats.length > 0) {
+      console.warn('Ecobee Buzz Card: "thermostats" array is deprecated. Use "entity", "dehumidifier_entity", and "erv_entity" instead.');
+      const climateEntry = config.thermostats.find(t => t.entity.startsWith('climate.'));
+      entity = climateEntry ? climateEntry.entity : config.thermostats[0].entity;
+      const dehumEntry = config.thermostats.find(t => t.entity.includes('dehumidifier'));
+      if (dehumEntry) dehumidifier_entity = dehumEntry.entity;
     }
-    
+
+    if (!entity) {
+      throw new Error('You need to define an "entity" (climate entity ID)');
+    }
+
     this.config = {
-      thermostats: config.thermostats,
+      entity: entity,
+      dehumidifier_entity: dehumidifier_entity || null,
+      erv_entity: erv_entity || null,
       outdoor_humidity: config.outdoor_humidity || 'sensor.thermostat_outdoor_humidity',
       outdoor_temperature: config.outdoor_temperature || 'sensor.thermostat_outdoor_temperature',
       weather_entity: config.weather_entity || 'weather.pirateweather',
-      name: config.name || 'Family Room',
+      name: config.name || 'Thermostat',
       bottom_buttons: config.bottom_buttons || [],
-      ...config
+      indoor_heat_index: config.indoor_heat_index || null,
+      outdoor_heat_index: config.outdoor_heat_index || null,
     };
-    
-    this.activeEntity = this.config.thermostats.find(t => t.entity.startsWith('climate.'))?.entity || this.config.thermostats[0].entity;
+
+    this.activeEntity = this.config.entity;
     console.log('Ecobee Buzz Card: Active entity set to', this.activeEntity);
   }
 
@@ -45,7 +62,7 @@ class EcobeeBuzzCard extends HTMLElement {
   static getStubConfig() {
     return {
       name: 'Thermostat',
-      thermostats: []
+      entity: 'climate.thermostat'
     };
   }
 
@@ -288,13 +305,6 @@ class EcobeeBuzzCard extends HTMLElement {
           gap: 10px;
         }
         
-        .temp-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-        }
-        
         .current-temp {
           font-size: 56px;
           font-weight: 200;
@@ -309,33 +319,21 @@ class EcobeeBuzzCard extends HTMLElement {
           opacity: 0.9;
         }
         
-        .temp-info-right {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 3px;
-        }
-        
-        .humidity {
-          font-size: 13px;
-          opacity: 0.9;
-          font-weight: 500;
-        }
-        
-        .fan-status {
-          font-size: 11px;
-          opacity: 0.8;
+        .section-label {
+          font-size: 10px;
           font-weight: 600;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
+          opacity: 0.7;
+          text-transform: uppercase;
+          margin-bottom: 2px;
         }
-        
-        .location {
+
+        .detail-line {
           font-size: 11px;
           opacity: 0.85;
           font-weight: 500;
-          letter-spacing: 0.8px;
         }
-        
+
         .outdoor-section {
           display: flex;
           align-items: center;
@@ -550,22 +548,22 @@ class EcobeeBuzzCard extends HTMLElement {
           background: linear-gradient(145deg, rgba(66, 135, 245, 0.5), rgba(50, 110, 200, 0.4));
         }
         
-        .side-btn.thermostat-2 {
-          background: linear-gradient(145deg, rgba(82, 183, 136, 0.4), rgba(60, 150, 110, 0.3));
-          border-color: rgba(82, 183, 136, 0.35);
-        }
-        
-        .side-btn.thermostat-2:hover {
-          background: linear-gradient(145deg, rgba(82, 183, 136, 0.5), rgba(60, 150, 110, 0.4));
-        }
-        
         .side-btn.thermostat-3 {
           background: linear-gradient(145deg, rgba(168, 85, 247, 0.4), rgba(130, 65, 200, 0.3));
           border-color: rgba(168, 85, 247, 0.35);
         }
-        
+
         .side-btn.thermostat-3:hover {
           background: linear-gradient(145deg, rgba(168, 85, 247, 0.5), rgba(130, 65, 200, 0.4));
+        }
+
+        .side-btn.erv {
+          background: linear-gradient(145deg, rgba(82, 183, 136, 0.4), rgba(60, 150, 110, 0.3));
+          border-color: rgba(82, 183, 136, 0.35);
+        }
+
+        .side-btn.erv:hover {
+          background: linear-gradient(145deg, rgba(82, 183, 136, 0.5), rgba(60, 150, 110, 0.4));
         }
         
         .side-btn-icon {
@@ -779,29 +777,22 @@ class EcobeeBuzzCard extends HTMLElement {
         <div class="main-content">
           <div class="temp-section">
             <div class="temp-display" id="temp-display">
-              <div class="temp-row">
-                <div class="current-temp">
-                  <span id="current-temp">--</span><span class="temp-unit">°</span>
-                </div>
-                <div class="temp-info-right">
-                  <div class="humidity" id="humidity">--% RH</div>
-                  <div class="fan-status" id="fan-status">Fan On</div>
-                </div>
+              <div class="section-label" id="location-label">Indoor</div>
+              <div class="current-temp">
+                <span id="current-temp">--</span><span class="temp-unit">°</span>
               </div>
-              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-                <div class="location" id="location-label">Indoor</div>
-                <div class="feels-like" id="indoor-feels-like" style="font-size: 10px; opacity: 0.85; font-weight: 500;">Feels like: --°</div>
-              </div>
-              
+              <div class="detail-line" id="humidity">Rel Humidity: --%</div>
+              <div class="detail-line" id="indoor-feels-like">Feels Like: --°</div>
+
               <div class="outdoor-section">
+                <div class="section-label" id="outdoor-label">Outdoor</div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <div class="outdoor-temp">
                     <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
                   </div>
                   <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-                    <div class="outdoor-humidity" id="outdoor-humidity">--% RH</div>
-                    <div class="outdoor-label" id="outdoor-label">Outdoor</div>
-                    <div class="feels-like" id="outdoor-feels-like" style="font-size: 9px; opacity: 0.75; font-weight: 500;">Feels: --°</div>
+                    <div class="detail-line" id="outdoor-humidity">--% RH</div>
+                    <div class="detail-line" id="outdoor-feels-like">Feels: --°</div>
                   </div>
                 </div>
               </div>
@@ -915,75 +906,70 @@ class EcobeeBuzzCard extends HTMLElement {
   renderSideControls() {
     const sideControls = this.shadowRoot.getElementById('side-controls');
     if (!sideControls) return;
-    
+
     let html = '';
-    
-    // First, collect all thermostats
-    const thermostats = [];
-    this.config.thermostats.forEach((thermostat) => {
-      if (thermostat.entity.startsWith('climate.')) {
-        thermostats.push(thermostat);
-      }
-    });
-    
-    // Find dehumidifier
-    const dehumidifierConfig = this.config.thermostats.find(t => t.entity.includes('dehumidifier'));
-    
-    // Render in specific order: Upstairs (first thermostat), Dehumidifier, Downstairs (second thermostat)
-    
-    // 1. First thermostat (Upstairs)
-    if (thermostats[0]) {
-      const isActive = this.activeEntity === thermostats[0].entity;
-      html += `
-        <button class="side-btn thermostat-3 ${isActive ? 'active' : ''}" id="thermostat-btn-0">
-          <span class="side-btn-icon">🌡️</span>
-          <span class="side-btn-text">${thermostats[0].name || 'Upstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span><br/><span class="side-btn-label" id="thermostat-hvac-0">${this._hass && this._hass.states[thermostats[0].entity] ? this._hass.states[thermostats[0].entity].attributes.hvac_action || '' : ''}</span></span>
-        </button>
-      `;
-    }
-    
-    // 2. Dehumidifier in the middle
-    if (dehumidifierConfig) {
+    const hvacAction = this._hass && this._hass.states[this.config.entity]
+      ? this._hass.states[this.config.entity].attributes.hvac_action || 'idle'
+      : 'idle';
+
+    // 1. HVAC Status button (always shown)
+    html += `
+      <button class="side-btn thermostat-3" id="hvac-status-btn">
+        <span class="side-btn-icon">🌡️</span>
+        <span class="side-btn-text">${this.config.name}<br/><span class="side-btn-label" id="hvac-action-label">${hvacAction}</span></span>
+      </button>
+    `;
+
+    // 2. Dehumidifier button (if configured)
+    if (this.config.dehumidifier_entity) {
       html += `
         <button class="side-btn humidity" id="dehumidifier-btn">
           <span class="side-btn-icon">💧</span>
-          <span class="side-btn-text">${dehumidifierConfig.name || 'Dehumidifier'}<br/><span class="side-btn-label" id="dehumidifier-status-label">Control</span></span>
+          <span class="side-btn-text">Dehumidifier<br/><span class="side-btn-label" id="dehumidifier-status-label">Control</span></span>
         </button>
       `;
     }
-    
-    // 3. Second thermostat (Downstairs)
-    if (thermostats[1]) {
-      const isActive = this.activeEntity === thermostats[1].entity;
+
+    // 3. ERV button (if configured)
+    if (this.config.erv_entity) {
+      const ervState = this._hass && this._hass.states[this.config.erv_entity]
+        ? this._hass.states[this.config.erv_entity].state
+        : 'unknown';
       html += `
-        <button class="side-btn thermostat-2 ${isActive ? 'active' : ''}" id="thermostat-btn-1">
-          <span class="side-btn-icon">🌡️</span>
-          <span class="side-btn-text">${thermostats[1].name || 'Downstairs Thermostat'}<br/><span class="side-btn-label">${isActive ? 'Active' : 'Off'}</span><br/><span class="side-btn-label" id="thermostat-hvac-1">${this._hass && this._hass.states[thermostats[1].entity] ? this._hass.states[thermostats[1].entity].attributes.hvac_action || '' : ''}</span></span>
+        <button class="side-btn erv" id="erv-btn">
+          <span class="side-btn-icon">💨</span>
+          <span class="side-btn-text">ERV<br/><span class="side-btn-label" id="erv-status-label">${ervState}</span></span>
         </button>
       `;
     }
-    
+
     sideControls.innerHTML = html;
-    
-    // Add event listeners for mobile app compatibility
-    if (thermostats[0]) {
-      const btn0 = this.shadowRoot.getElementById('thermostat-btn-0');
-      if (btn0) {
-        btn0.addEventListener('click', () => this.switchThermostat(thermostats[0].entity));
-      }
+
+    // Event listeners
+    const hvacBtn = this.shadowRoot.getElementById('hvac-status-btn');
+    if (hvacBtn) {
+      hvacBtn.addEventListener('click', () => {
+        const event = new Event('hass-more-info', { bubbles: true, composed: true });
+        event.detail = { entityId: this.config.entity };
+        this.dispatchEvent(event);
+      });
     }
-    
-    if (dehumidifierConfig) {
+
+    if (this.config.dehumidifier_entity) {
       const dehumBtn = this.shadowRoot.getElementById('dehumidifier-btn');
       if (dehumBtn) {
         dehumBtn.addEventListener('click', () => this.toggleDehumidifier());
       }
     }
-    
-    if (thermostats[1]) {
-      const btn1 = this.shadowRoot.getElementById('thermostat-btn-1');
-      if (btn1) {
-        btn1.addEventListener('click', () => this.switchThermostat(thermostats[1].entity));
+
+    if (this.config.erv_entity) {
+      const ervBtn = this.shadowRoot.getElementById('erv-btn');
+      if (ervBtn) {
+        ervBtn.addEventListener('click', () => {
+          const event = new Event('hass-more-info', { bubbles: true, composed: true });
+          event.detail = { entityId: this.config.erv_entity };
+          this.dispatchEvent(event);
+        });
       }
     }
   }
@@ -1058,7 +1044,6 @@ class EcobeeBuzzCard extends HTMLElement {
     const heatTempEl = this.shadowRoot.getElementById('heat-temp');
     const coolTempEl = this.shadowRoot.getElementById('cool-temp');
     const humidityEl = this.shadowRoot.getElementById('humidity');
-    const fanStatusEl = this.shadowRoot.getElementById('fan-status');
     const modeValueEl = this.shadowRoot.getElementById('mode-value');
     const fanValueEl = this.shadowRoot.getElementById('fan-value');
     const outdoorTempEl = this.shadowRoot.getElementById('outdoor-temp');
@@ -1084,11 +1069,9 @@ class EcobeeBuzzCard extends HTMLElement {
       if (coolTempEl) coolTempEl.textContent = '--';
     }
     
-    if (humidityEl && entity.attributes.current_humidity) humidityEl.textContent = `${entity.attributes.current_humidity}% RH`;
-    
+    if (humidityEl && entity.attributes.current_humidity) humidityEl.textContent = `Rel Humidity: ${entity.attributes.current_humidity}%`;
+
     const fanMode = entity.attributes.fan_mode || 'auto';
-    if (fanStatusEl) fanStatusEl.textContent = `Fan ${fanMode === 'on' ? 'On' : fanMode === 'diffuse' ? 'Diffuse' : 'Auto'}`;
-    
     const hvacMode = entity.state || 'off';
     if (modeValueEl) modeValueEl.textContent = hvacMode.toUpperCase().replace('_', ' ');
     if (fanValueEl) fanValueEl.textContent = fanMode.toUpperCase();
@@ -1114,7 +1097,7 @@ class EcobeeBuzzCard extends HTMLElement {
     if (indoorFeelsLikeEl && this.config.indoor_heat_index) {
       const indoorHeatIndexEntity = this._hass.states[this.config.indoor_heat_index];
       if (indoorHeatIndexEntity) {
-        indoorFeelsLikeEl.textContent = `Feels like: ${Math.round(parseFloat(indoorHeatIndexEntity.state))}°`;
+        indoorFeelsLikeEl.textContent = `Feels Like: ${Math.round(parseFloat(indoorHeatIndexEntity.state))}°`;
       }
     }
     
@@ -1127,33 +1110,35 @@ class EcobeeBuzzCard extends HTMLElement {
       }
     }
     
-    let thermostatIdx = 0;
-    this.config.thermostats.forEach((thermostat) => {
-      if (thermostat.entity.startsWith('climate.')) {
-        const btn = this.shadowRoot.querySelector(`[onclick*="${thermostat.entity}"]`);
-        if (btn) {
-          const isActive = this.activeEntity === thermostat.entity;
-          const label = btn.querySelector('.side-btn-label');
-          if (label) {
-            label.textContent = isActive ? 'Active' : 'Off';
-          }
-          btn.classList.toggle('active', isActive);
-        }
-        const hvacLabel = this.shadowRoot.getElementById(`thermostat-hvac-${thermostatIdx}`);
-        if (hvacLabel) {
-          const entity = this._hass.states[thermostat.entity];
-          hvacLabel.textContent = entity && entity.attributes.hvac_action ? entity.attributes.hvac_action : '';
-        }
-        thermostatIdx++;
+    // Update HVAC status side button
+    const hvacActionLabel = this.shadowRoot.getElementById('hvac-action-label');
+    if (hvacActionLabel) {
+      const hvacAction = entity.attributes.hvac_action || 'idle';
+      hvacActionLabel.textContent = hvacAction;
+      const hvacBtn = this.shadowRoot.getElementById('hvac-status-btn');
+      if (hvacBtn) {
+        hvacBtn.classList.toggle('active', hvacAction !== 'idle');
       }
-    });
+    }
+
+    // Update ERV status if configured
+    if (this.config.erv_entity) {
+      const ervEntity = this._hass.states[this.config.erv_entity];
+      const ervLabel = this.shadowRoot.getElementById('erv-status-label');
+      if (ervLabel && ervEntity) {
+        ervLabel.textContent = ervEntity.state;
+      }
+      const ervBtn = this.shadowRoot.getElementById('erv-btn');
+      if (ervBtn && ervEntity) {
+        ervBtn.classList.toggle('active', ervEntity.state === 'on');
+      }
+    }
   }
 
   updateDehumidifier() {
-    const dehumidifierConfig = this.config.thermostats.find(t => t.entity.includes('dehumidifier'));
-    if (!dehumidifierConfig) return;
+    if (!this.config.dehumidifier_entity) return;
     
-    const entity = this._hass.states[dehumidifierConfig.entity];
+    const entity = this._hass.states[this.config.dehumidifier_entity];
     if (!entity) return;
     
     console.log('updateDehumidifier called, isAdjusting:', this.isAdjusting, 'entity humidity:', entity.attributes.humidity);
@@ -1194,7 +1179,7 @@ class EcobeeBuzzCard extends HTMLElement {
       
       const currentHumidity = entity.attributes.current_humidity || entity.attributes.humidity;
       if (currentTempEl && currentHumidity) currentTempEl.textContent = Math.round(currentHumidity);
-      if (humidityEl && targetHumidity) humidityEl.textContent = `Target: ${targetHumidity}% RH`;
+      if (humidityEl && targetHumidity) humidityEl.textContent = `Target: ${targetHumidity}%`;
       if (locationLabel) locationLabel.textContent = 'Dehumidifier';
     }
   }
@@ -1214,18 +1199,18 @@ class EcobeeBuzzCard extends HTMLElement {
       // Update left panel with current weather
       const currentTempEl = this.shadowRoot.getElementById('current-temp');
       const humidityEl = this.shadowRoot.getElementById('humidity');
-      const fanStatusEl = this.shadowRoot.getElementById('fan-status');
+      const indoorFeelsLikeEl = this.shadowRoot.getElementById('indoor-feels-like');
       const locationLabel = this.shadowRoot.getElementById('location-label');
       const outdoorLabel = this.shadowRoot.getElementById('outdoor-label');
-      
+
       if (currentTempEl && weatherEntity.attributes.temperature) {
         currentTempEl.textContent = Math.round(weatherEntity.attributes.temperature);
       }
       if (humidityEl && weatherEntity.attributes.humidity) {
-        humidityEl.textContent = `${weatherEntity.attributes.humidity}% RH`;
+        humidityEl.textContent = `Rel Humidity: ${weatherEntity.attributes.humidity}%`;
       }
-      if (fanStatusEl && weatherEntity.state) {
-        fanStatusEl.textContent = weatherEntity.state.charAt(0).toUpperCase() + weatherEntity.state.slice(1).replace('-', ' ');
+      if (indoorFeelsLikeEl && weatherEntity.state) {
+        indoorFeelsLikeEl.textContent = weatherEntity.state.charAt(0).toUpperCase() + weatherEntity.state.slice(1).replace('-', ' ');
       }
       if (locationLabel) {
         locationLabel.textContent = 'Current Weather';
@@ -1380,8 +1365,7 @@ class EcobeeBuzzCard extends HTMLElement {
   }
 
   toggleDehumidifier() {
-    const dehumidifierConfig = this.config.thermostats.find(t => t.entity.includes('dehumidifier'));
-    if (!dehumidifierConfig) return;
+    if (!this.config.dehumidifier_entity) return;
     
     const weatherView = this.shadowRoot.getElementById('weather-view');
     const thermostatControls = this.shadowRoot.getElementById('thermostat-controls');
@@ -1412,15 +1396,14 @@ class EcobeeBuzzCard extends HTMLElement {
   adjustDehumidifier(delta) {
     console.log('🔴 BUTTON CLICKED! adjustDehumidifier called with delta:', delta);
     
-    const dehumidifierConfig = this.config.thermostats.find(t => t.entity.includes('dehumidifier'));
-    if (!dehumidifierConfig) {
-      console.error('No dehumidifier config found');
+    if (!this.config.dehumidifier_entity) {
+      console.error('No dehumidifier entity configured');
       return;
     }
-    
-    const entity = this._hass.states[dehumidifierConfig.entity];
+
+    const entity = this._hass.states[this.config.dehumidifier_entity];
     if (!entity) {
-      console.error('Dehumidifier entity not found:', dehumidifierConfig.entity);
+      console.error('Dehumidifier entity not found:', this.config.dehumidifier_entity);
       return;
     }
     
@@ -1437,7 +1420,7 @@ class EcobeeBuzzCard extends HTMLElement {
     const newHumidity = Math.max(minHumidity, Math.min(maxHumidity, currentHumidity + delta));
     
     console.log('Adjusting dehumidifier:', {
-      entity_id: dehumidifierConfig.entity,
+      entity_id: this.config.dehumidifier_entity,
       current: currentHumidity,
       min: minHumidity,
       max: maxHumidity,
@@ -1452,7 +1435,7 @@ class EcobeeBuzzCard extends HTMLElement {
     console.log('🔵 About to call service with data:', {
       domain: 'humidifier',
       service: 'set_humidity',
-      entity_id: dehumidifierConfig.entity,
+      entity_id: this.config.dehumidifier_entity,
       humidity: newHumidity
     });
     
@@ -1461,7 +1444,7 @@ class EcobeeBuzzCard extends HTMLElement {
     console.log('🔵 Change amount:', newHumidity - currentHumidity);
     
     this._hass.callService('humidifier', 'set_humidity', {
-      entity_id: dehumidifierConfig.entity,
+      entity_id: this.config.dehumidifier_entity,
       humidity: newHumidity
     });
     
@@ -1469,37 +1452,12 @@ class EcobeeBuzzCard extends HTMLElement {
     
     // Update display after delay
     setTimeout(() => {
-      const updatedEntity = this._hass.states[dehumidifierConfig.entity];
+      const updatedEntity = this._hass.states[this.config.dehumidifier_entity];
       console.log('🔵 After 2 seconds, entity humidity is:', updatedEntity ? updatedEntity.attributes.humidity : 'entity not found');
       console.log('Updating display after service call');
       this.isAdjusting = false;
       this.updateDehumidifier();
     }, 2000);
-  }
-
-  switchThermostat(entity) {
-    if (!entity.startsWith('climate.')) return;
-    
-    this.activeEntity = entity;
-    this.viewMode = 'thermostat';
-    
-    const weatherView = this.shadowRoot.getElementById('weather-view');
-    const dehumidifierView = this.shadowRoot.getElementById('dehumidifier-view');
-    const thermostatControls = this.shadowRoot.getElementById('thermostat-controls');
-    const weatherBtn = this.shadowRoot.getElementById('weather-toggle-btn');
-    
-    if (weatherView) weatherView.classList.add('view-hidden');
-    if (dehumidifierView) dehumidifierView.classList.add('view-hidden');
-    if (thermostatControls) thermostatControls.classList.remove('view-hidden');
-    if (weatherBtn) weatherBtn.classList.remove('active');
-    
-    const locationLabel = this.shadowRoot.getElementById('location-label');
-    const outdoorLabel = this.shadowRoot.getElementById('outdoor-label');
-    if (locationLabel) locationLabel.textContent = 'Indoor';
-    if (outdoorLabel) outdoorLabel.textContent = 'Outdoor';
-    
-    this.renderSideControls();
-    this.updateThermostat();
   }
 
   handleBottomButton(index) {
@@ -1614,7 +1572,6 @@ class EcobeeBuzzCard extends HTMLElement {
 
   cycleFan() {
     if (!this._hass || !this.activeEntity) return;
-    if (this.activeEntity !== 'climate.thermostat') return;
     
     const entity = this._hass.states[this.activeEntity];
     if (!entity) return;
