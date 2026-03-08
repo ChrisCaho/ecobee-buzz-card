@@ -9,15 +9,16 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 
 ## What's Changed (from original)
 
-### v2.1.7 — Hold Status & BuzzBridge Integration
+### v2.1.8 — Hold Status & BuzzBridge Integration
 - **Hold status button** below center controls — shows "PROGRAM" (green) when following schedule, or "HOLD" with duration (yellow) when a hold is active
 - **Clear hold with confirmation** — tap the hold button to clear hold and resume schedule, with YES/Cancel confirmation dialog
+- **Auto-refresh on load** — card triggers BuzzBridge Refresh Now on dashboard open for fresh data
+- **Auto-refresh on clear hold** — triggers immediate refresh plus a second refresh 5 seconds later to catch delayed state updates
 - **BuzzBridge integration** — reads hold status from BuzzBridge sensors, supports timed holds (shows remaining minutes/hours/days) and indefinite holds
-- **Boost polling** — automatically triggers BuzzBridge boost polling after clearing a hold for faster status refresh
 - **Dynamic fan modes** — fan mode cycling now reads available modes from the entity instead of hardcoding
 - **Improved temp display** — indoor/outdoor split into separate boxes with different shading, labels below temps, tighter spacing
 - **Center controls alignment** — control panel top-aligned with indoor temp box
-- **New config options**: `hold_status_entity`, `clear_hold_entity`, `boost_polling_entity`
+- **New config options**: `hold_status_entity`, `clear_hold_entity`, `boost_polling_entity`, `refresh_now_entity`
 
 ### v2.0.0 — Single-Thermostat Refactor
 - **Single thermostat per card** — Each card now controls one climate entity via the `entity` config key. Use separate cards for multiple thermostats/zones. The old `thermostats` array config is still accepted for backwards compatibility but is deprecated.
@@ -70,6 +71,7 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 | `hold_status_entity` | string | No | | BuzzBridge hold status sensor |
 | `clear_hold_entity` | string | No | | HomeKit clear hold button entity |
 | `boost_polling_entity` | string | No | | BuzzBridge boost polling button |
+| `refresh_now_entity` | string | No | | BuzzBridge refresh now button |
 | `bottom_buttons` | list | No | | Custom monitoring buttons (up to 5) |
 
 ### Minimal Configuration
@@ -91,6 +93,7 @@ weather_entity: weather.home
 hold_status_entity: sensor.buzzbridge_thermostat_home_hold_status
 clear_hold_entity: button.ecob_home_clear_hold
 boost_polling_entity: button.buzzbridge_thermostat_home_boost_polling
+refresh_now_entity: button.buzzbridge_thermostat_home_refresh_now
 ```
 
 ### With Dehumidifier and ERV

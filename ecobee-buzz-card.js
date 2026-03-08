@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.7';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.8';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -38,6 +38,7 @@ class EcobeeBuzzCard extends HTMLElement {
       hold_status_entity: config.hold_status_entity || null,
       clear_hold_entity: config.clear_hold_entity || null,
       boost_polling_entity: config.boost_polling_entity || null,
+      refresh_now_entity: config.refresh_now_entity || null,
       outdoor_humidity: config.outdoor_humidity || 'sensor.thermostat_outdoor_humidity',
       outdoor_temperature: config.outdoor_temperature || 'sensor.thermostat_outdoor_temperature',
       weather_entity: config.weather_entity || 'weather.pirateweather',
@@ -55,6 +56,7 @@ class EcobeeBuzzCard extends HTMLElement {
     this._hass = hass;
     if (!this.content) {
       this.render();
+      this.triggerRefreshNow();
     }
     this.update();
   }
@@ -1402,18 +1404,24 @@ class EcobeeBuzzCard extends HTMLElement {
       entity_id: this.config.clear_hold_entity
     });
 
-    // Boost polling for faster status update
-    if (this.config.boost_polling_entity) {
-      this._hass.callService('button', 'press', {
-        entity_id: this.config.boost_polling_entity
-      });
-    }
+    // Immediate refresh to pick up the change
+    this.triggerRefreshNow();
+
+    // Refresh again after 5 seconds to catch delayed state updates
+    setTimeout(() => this.triggerRefreshNow(), 5000);
 
     // Briefly show "Clearing..." feedback
     const holdText = this.shadowRoot.getElementById('hold-mode-text');
     if (holdText) {
       holdText.innerHTML = '<span class="hold-line1">CLEARING...</span>';
     }
+  }
+
+  triggerRefreshNow() {
+    if (!this._hass || !this.config.refresh_now_entity) return;
+    this._hass.callService('button', 'press', {
+      entity_id: this.config.refresh_now_entity
+    });
   }
 
   updateDehumidifier() {
