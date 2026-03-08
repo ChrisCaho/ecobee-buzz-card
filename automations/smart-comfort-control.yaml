@@ -79,12 +79,14 @@ Then say: "Run set feels like 73" to your voice assistant!
 
 1. **Create the required helpers** (see Requirements above)
 
-2. **Update entity IDs** in the automation below to match your setup:
-   - `climate.thermostat` → Your upstairs thermostat
-   - `sensor.thermal_comfort_heat_index` → Your thermal comfort sensor
-   - `sensor.thermostat_outdoor_temperature` → Your outdoor temp sensor
-   - `humidifier.thermostat_dehumidifier` → Your dehumidifier (if applicable)
-   - `climate.smart_thermostat_XXX` → Your downstairs/basement thermostat (optional)
+2. **Update entity IDs** in the automation below to match your setup.
+   Find your entity IDs in **Settings → Devices & Services → Entities**.
+   Replace these placeholders with your actual entity IDs:
+   - `climate.thermostat` → Your primary thermostat entity ID
+   - `sensor.thermal_comfort_heat_index` → Your Thermal Comfort integration heat index sensor
+   - `sensor.thermostat_outdoor_temperature` → Your outdoor temperature sensor entity ID
+   - `humidifier.thermostat_dehumidifier` → Your dehumidifier entity ID (remove this action if not applicable)
+   - `climate.smart_thermostat_YOUR_DEVICE_ID` → Your secondary/basement thermostat entity ID (remove the basement heat section if not applicable)
 
 3. **Copy the automation YAML** below to Settings → Automations → Create Automation → Edit in YAML
 
@@ -154,7 +156,7 @@ actions:
         sequence:
           - action: climate.set_hvac_mode
             target:
-              entity_id: climate.smart_thermostat_2311165277002660120448e1e9e1f9e7
+              entity_id: climate.smart_thermostat_YOUR_DEVICE_ID
             data:
               hvac_mode: heat
           - action: logbook.log
@@ -164,7 +166,7 @@ actions:
     default:
       - action: climate.set_hvac_mode
         target:
-          entity_id: climate.smart_thermostat_2311165277002660120448e1e9e1f9e7
+          entity_id: climate.smart_thermostat_YOUR_DEVICE_ID
         data:
           hvac_mode: "off"
 mode: single
