@@ -1,4 +1,5 @@
-console.log('Ecobee Buzz Card: Script loading started...');
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.0';
+console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
   constructor() {
@@ -34,6 +35,9 @@ class EcobeeBuzzCard extends HTMLElement {
       entity: entity,
       dehumidifier_entity: dehumidifier_entity || null,
       erv_entity: erv_entity || null,
+      hold_status_entity: config.hold_status_entity || null,
+      clear_hold_entity: config.clear_hold_entity || null,
+      boost_polling_entity: config.boost_polling_entity || null,
       outdoor_humidity: config.outdoor_humidity || 'sensor.thermostat_outdoor_humidity',
       outdoor_temperature: config.outdoor_temperature || 'sensor.thermostat_outdoor_temperature',
       weather_entity: config.weather_entity || 'weather.pirateweather',
@@ -304,6 +308,17 @@ class EcobeeBuzzCard extends HTMLElement {
           flex-direction: column;
           gap: 4px;
         }
+
+        .outdoor-display {
+          background: linear-gradient(165deg, rgba(15,35,65,0.7) 0%, rgba(10,25,50,0.85) 100%);
+          border-radius: 12px;
+          padding: 14px;
+          border: 1px solid rgba(100,180,255,0.18);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
         
         .current-temp {
           font-size: 56px;
@@ -344,9 +359,7 @@ class EcobeeBuzzCard extends HTMLElement {
         .outdoor-section {
           display: flex;
           flex-direction: column;
-          gap: 2px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(100,180,255,0.12);
+          gap: 4px;
         }
 
         .outdoor-temp {
@@ -412,11 +425,120 @@ class EcobeeBuzzCard extends HTMLElement {
           font-weight: 600;
         }
         
-        .controls {
-          display: flex;
+        .hold-status-btn {
+          margin-top: 8px;
+          padding: 8px 16px;
+          border-radius: 10px;
+          text-align: center;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: rgba(255,255,255,0.9);
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+          display: none;
+        }
+
+        .hold-status-btn.visible {
+          display: block;
+        }
+
+        .hold-status-btn.no-hold {
+          background: linear-gradient(145deg, rgba(34,120,74,0.4), rgba(24,80,54,0.3));
+          border: 1px solid rgba(74,222,128,0.3);
+        }
+
+        .hold-status-btn.has-hold {
+          background: linear-gradient(145deg, rgba(140,120,30,0.4), rgba(100,85,20,0.3));
+          border: 1px solid rgba(234,200,70,0.3);
+          cursor: pointer;
+        }
+
+        .hold-line1 {
+          display: block;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 1px;
+        }
+
+        .hold-line2 {
+          display: block;
+          font-size: 10px;
+          opacity: 0.85;
+          margin-top: 2px;
+        }
+
+        .hold-confirm-overlay {
+          display: none;
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.6);
+          border-radius: 16px;
+          z-index: 100;
           align-items: center;
           justify-content: center;
+        }
+
+        .hold-confirm-overlay.visible {
+          display: flex;
+        }
+
+        .hold-confirm-dialog {
+          background: linear-gradient(145deg, rgba(20,50,80,0.95), rgba(10,30,55,0.95));
+          border: 1px solid rgba(100,180,255,0.3);
+          border-radius: 12px;
+          padding: 16px 20px;
+          text-align: center;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .hold-confirm-text {
+          font-size: 13px;
+          color: rgba(255,255,255,0.9);
+          margin-bottom: 12px;
+        }
+
+        .hold-confirm-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+        }
+
+        .hold-confirm-yes {
+          background: linear-gradient(145deg, rgba(34,120,74,0.6), rgba(24,80,54,0.5));
+          border: 1px solid rgba(74,222,128,0.4);
+          border-radius: 8px;
+          padding: 8px 20px;
+          color: rgba(255,255,255,0.95);
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+        }
+
+        .hold-confirm-cancel {
+          background: linear-gradient(145deg, rgba(60,60,70,0.5), rgba(40,40,50,0.4));
+          border: 1px solid rgba(150,150,160,0.3);
+          border-radius: 8px;
+          padding: 8px 20px;
+          color: rgba(255,255,255,0.7);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          letter-spacing: 0.5px;
+        }
+
+        .controls {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
           min-height: 200px;
+          position: relative;
         }
         
         .heat-cool {
@@ -786,7 +908,9 @@ class EcobeeBuzzCard extends HTMLElement {
                 <div class="detail-line" id="humidity">Humidity: --%</div>
                 <div class="detail-line" id="indoor-feels-like">Feels Like: --°</div>
               </div>
+            </div>
 
+            <div class="outdoor-display" id="outdoor-display">
               <div class="outdoor-section">
                 <div class="outdoor-temp">
                   <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
@@ -824,6 +948,18 @@ class EcobeeBuzzCard extends HTMLElement {
                 <div class="temp-control-value cool" id="cool-temp">--</div>
                 <button class="temp-btn" id="cool-up-btn">▲</button>
                 <button class="temp-btn" id="cool-down-btn">▼</button>
+              </div>
+            </div>
+            <div class="hold-status-btn" id="hold-status-btn">
+              <span class="hold-mode-text" id="hold-mode-text">--</span>
+            </div>
+            <div class="hold-confirm-overlay" id="hold-confirm-overlay">
+              <div class="hold-confirm-dialog">
+                <div class="hold-confirm-text">Clear hold and resume schedule?</div>
+                <div class="hold-confirm-buttons">
+                  <button class="hold-confirm-yes" id="hold-confirm-yes">YES</button>
+                  <button class="hold-confirm-cancel" id="hold-confirm-cancel">Cancel</button>
+                </div>
               </div>
             </div>
           </div>
@@ -899,9 +1035,35 @@ class EcobeeBuzzCard extends HTMLElement {
     // Dehumidifier adjustment buttons
     const dehumUpBtn = this.shadowRoot.getElementById('dehum-up-btn');
     const dehumDownBtn = this.shadowRoot.getElementById('dehum-down-btn');
-    
+
     if (dehumUpBtn) dehumUpBtn.addEventListener('click', () => this.adjustDehumidifier(5));
     if (dehumDownBtn) dehumDownBtn.addEventListener('click', () => this.adjustDehumidifier(-5));
+
+    // Hold status button
+    const holdBtn = this.shadowRoot.getElementById('hold-status-btn');
+    if (holdBtn) {
+      holdBtn.addEventListener('click', () => {
+        if (!this.config.clear_hold_entity) return;
+        if (!holdBtn.classList.contains('has-hold')) return;
+        const overlay = this.shadowRoot.getElementById('hold-confirm-overlay');
+        if (overlay) overlay.classList.add('visible');
+      });
+    }
+
+    // Hold confirmation - YES
+    const holdYes = this.shadowRoot.getElementById('hold-confirm-yes');
+    if (holdYes) {
+      holdYes.addEventListener('click', () => this.clearHold());
+    }
+
+    // Hold confirmation - Cancel
+    const holdCancel = this.shadowRoot.getElementById('hold-confirm-cancel');
+    if (holdCancel) {
+      holdCancel.addEventListener('click', () => {
+        const overlay = this.shadowRoot.getElementById('hold-confirm-overlay');
+        if (overlay) overlay.classList.remove('visible');
+      });
+    }
   }
 
   renderSideControls() {
@@ -1031,6 +1193,7 @@ class EcobeeBuzzCard extends HTMLElement {
     if (!this._hass) return;
     console.log('Main update called - viewMode:', this.viewMode, 'isAdjusting:', this.isAdjusting);
     this.updateThermostat();
+    this.updateHoldStatus();
     this.updateDehumidifier();
     this.updateWeather();
     this.updateBottomButtons();
@@ -1133,6 +1296,66 @@ class EcobeeBuzzCard extends HTMLElement {
       if (ervBtn && ervEntity) {
         ervBtn.classList.toggle('active', ervEntity.state === 'on');
       }
+    }
+  }
+
+  updateHoldStatus() {
+    const holdBtn = this.shadowRoot.getElementById('hold-status-btn');
+    if (!holdBtn) return;
+
+    if (!this.config.hold_status_entity) {
+      holdBtn.classList.remove('visible');
+      return;
+    }
+
+    holdBtn.classList.add('visible');
+    const holdEntity = this._hass.states[this.config.hold_status_entity];
+    const holdText = this.shadowRoot.getElementById('hold-mode-text');
+
+    if (!holdEntity || holdEntity.state === 'unavailable') {
+      holdBtn.className = 'hold-status-btn visible no-hold';
+      if (holdText) holdText.textContent = 'UNAVAILABLE';
+      return;
+    }
+
+    const isActive = holdEntity.attributes.active === true ||
+      (holdEntity.state !== 'None' && holdEntity.state !== 'none' && holdEntity.state !== '');
+
+    if (isActive) {
+      holdBtn.className = 'hold-status-btn visible has-hold';
+      if (holdText) {
+        holdText.innerHTML = `<span class="hold-line1">HOLD</span><span class="hold-line2">${holdEntity.state}</span>`;
+      }
+    } else {
+      holdBtn.className = 'hold-status-btn visible no-hold';
+      const entity = this._hass.states[this.activeEntity];
+      const mode = entity ? entity.state.toUpperCase().replace('_', ' ') : '--';
+      if (holdText) holdText.textContent = mode;
+    }
+  }
+
+  clearHold() {
+    const overlay = this.shadowRoot.getElementById('hold-confirm-overlay');
+    if (overlay) overlay.classList.remove('visible');
+
+    if (!this._hass || !this.config.clear_hold_entity) return;
+
+    // Press clear hold button
+    this._hass.callService('button', 'press', {
+      entity_id: this.config.clear_hold_entity
+    });
+
+    // Boost polling for faster status update
+    if (this.config.boost_polling_entity) {
+      this._hass.callService('button', 'press', {
+        entity_id: this.config.boost_polling_entity
+      });
+    }
+
+    // Briefly show "Clearing..." feedback
+    const holdText = this.shadowRoot.getElementById('hold-mode-text');
+    if (holdText) {
+      holdText.innerHTML = '<span class="hold-line1">CLEARING...</span>';
     }
   }
 
@@ -1577,7 +1800,7 @@ class EcobeeBuzzCard extends HTMLElement {
     const entity = this._hass.states[this.activeEntity];
     if (!entity) return;
     
-    const fanModes = ['auto', 'on', 'diffuse'];
+    const fanModes = entity.attributes.fan_modes || ['auto', 'on'];
     const currentFan = entity.attributes.fan_mode || 'auto';
     const currentIndex = fanModes.indexOf(currentFan);
     const nextFan = fanModes[(currentIndex + 1) % fanModes.length];
