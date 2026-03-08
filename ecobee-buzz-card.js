@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.5';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.6';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -1345,38 +1345,40 @@ class EcobeeBuzzCard extends HTMLElement {
   }
 
   formatHoldDuration(holdEntity) {
-    const state = holdEntity.state;
     const attrs = holdEntity.attributes || {};
 
-    // Strip "hold" prefix from state since button already shows HOLD
-    const cleaned = state.replace(/^hold\s*/i, '').trim();
-    const lower = cleaned.toLowerCase();
+    // Check indefinite attribute first
+    if (attrs.indefinite === true) {
+      return 'Indefinite';
+    }
 
-    // Check for permanent/indefinite hold
+    // Combine end_date + end_time from BuzzBridge attributes
+    if (attrs.end_date && attrs.end_time) {
+      const end = new Date(`${attrs.end_date}T${attrs.end_time}`);
+      const diffMs = end - new Date();
+      if (diffMs <= 0) return 'Expiring';
+      return this.formatDuration(diffMs);
+    }
+
+    // Check for single end time attribute
+    const endTime = attrs.hold_until || attrs.expires || null;
+    if (endTime) {
+      const end = new Date(endTime);
+      if (!isNaN(end)) {
+        const diffMs = end - new Date();
+        if (diffMs <= 0) return 'Expiring';
+        return this.formatDuration(diffMs);
+      }
+    }
+
+    // Strip "hold" prefix from state for fallback display
+    const cleaned = holdEntity.state.replace(/^hold\s*/i, '').trim();
+    const lower = cleaned.toLowerCase();
     if (lower === 'permanent' || lower === 'indefinite' || lower === 'true' || lower === '') {
       return 'Indefinite';
     }
 
-    // Check for end time in attributes (e.g., hold_until, end_time)
-    const endTime = attrs.hold_until || attrs.end_time || attrs.expires || null;
-    if (endTime) {
-      const end = new Date(endTime);
-      const now = new Date();
-      const diffMs = end - now;
-      if (diffMs <= 0) return 'Expiring';
-      return this.formatDuration(diffMs);
-    }
-
-    // Check if state or cleaned text is a datetime
-    const parsed = Date.parse(cleaned);
-    if (!isNaN(parsed)) {
-      const diffMs = parsed - Date.now();
-      if (diffMs <= 0) return 'Expiring';
-      return this.formatDuration(diffMs);
-    }
-
-    // Fallback: show cleaned state
-    return cleaned || state;
+    return cleaned || 'Indefinite';
   }
 
   formatDuration(ms) {
