@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.3';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.4';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -458,13 +458,22 @@ class EcobeeBuzzCard extends HTMLElement {
           text-transform: uppercase;
         }
 
+        .has-hold .hold-mode-text {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+
         .hold-line1 {
+          display: block;
           font-size: 12px;
           font-weight: 700;
           letter-spacing: 1px;
         }
 
         .hold-line2 {
+          display: block;
           font-size: 10px;
           opacity: 0.85;
         }
