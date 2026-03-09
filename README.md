@@ -9,6 +9,11 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 
 ## What's Changed (from original)
 
+### v2.2.0 — Clear Hold Visual Feedback
+- **Greyed-out clearing state** — after confirming clear hold, the button turns grey and is disabled until BuzzBridge confirms the hold has actually changed (hold cleared, state changed, or end time updated)
+- **No more false "HOLD" after clearing** — the button stays in "CLEARING..." state instead of flipping back to yellow "HOLD" on each poll cycle while waiting for the ecobee → beestat → BuzzBridge sync chain to propagate the change
+- **Automatic recovery** — button re-enables as soon as the hold status sensor reports any change from the snapshot taken at clear time
+
 ### v2.1.9 — Improved Clear Hold Responsiveness
 - **Boost polling on clear hold** — clearing a hold now immediately activates BuzzBridge boost polling (every 60s for 60min) so the integration checks for changes frequently instead of waiting for the default 5-minute poll cycle
 - **Delayed full refresh** — a full one-time data refresh fires 20 seconds after clearing the hold, giving ecobee's cloud and beestat's server-side cache (~3 min) time to sync the change

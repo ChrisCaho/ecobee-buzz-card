@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.9';
+const ECOBEE_BUZZ_CARD_VERSION = '2.2.0';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -449,6 +449,16 @@ class EcobeeBuzzCard extends HTMLElement {
           background: linear-gradient(145deg, rgba(140,120,30,0.4), rgba(100,85,20,0.3));
           border: 1px solid rgba(234,200,70,0.3);
           cursor: pointer;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .hold-status-btn.clearing {
+          background: linear-gradient(145deg, rgba(80,80,80,0.4), rgba(60,60,60,0.3));
+          border: 1px solid rgba(150,150,150,0.3);
+          cursor: default;
+          pointer-events: none;
+          opacity: 0.6;
           flex-direction: column;
           gap: 2px;
         }
@@ -1328,17 +1338,42 @@ class EcobeeBuzzCard extends HTMLElement {
     if (!holdEntity || holdEntity.state === 'unavailable') {
       holdBtn.className = 'hold-status-btn';
       if (holdText) holdText.textContent = 'PROGRAM';
+      this._clearingHold = false;
       return;
     }
 
     const isActive = holdEntity.attributes.active === true ||
       (holdEntity.state !== 'None' && holdEntity.state !== 'none' && holdEntity.state !== '');
 
+    // If we're in clearing mode, stay greyed out until the hold state
+    // actually changes — either the hold clears entirely, or the end
+    // time changes (indicating beestat has synced new data)
+    if (this._clearingHold) {
+      const stateChanged = holdEntity.state !== this._holdSnapshotState;
+      const endDateChanged = (holdEntity.attributes.end_date || null) !== this._holdSnapshotEndDate;
+      const endTimeChanged = (holdEntity.attributes.end_time || null) !== this._holdSnapshotEndTime;
+      const holdCleared = !isActive;
+
+      if (holdCleared || stateChanged || endDateChanged || endTimeChanged) {
+        // Hold status has changed — exit clearing mode
+        this._clearingHold = false;
+        this._holdSnapshotState = null;
+        this._holdSnapshotEndDate = null;
+        this._holdSnapshotEndTime = null;
+      } else {
+        // No change yet — keep the button greyed out
+        holdBtn.className = 'hold-status-btn clearing';
+        if (holdText) {
+          holdText.innerHTML = '<span class="hold-line1">CLEARING...</span>';
+        }
+        return;
+      }
+    }
+
     if (isActive) {
       holdBtn.className = 'hold-status-btn has-hold';
       if (holdText) {
         const duration = this.formatHoldDuration(holdEntity);
-        console.log('Ecobee Buzz Card: Hold active, duration:', duration, 'attrs:', JSON.stringify(holdEntity.attributes));
         holdText.innerHTML = '<span class="hold-line1">HOLD</span><span class="hold-line2">' + duration + '</span>';
       }
     } else {
@@ -1432,6 +1467,16 @@ class EcobeeBuzzCard extends HTMLElement {
 
     if (!this._hass || !this.config.clear_hold_entity) return;
 
+    // Snapshot current hold state so updateHoldStatus() can detect when
+    // the hold actually changes (cleared, or end time differs)
+    const holdEntity = this._hass.states[this.config.hold_status_entity];
+    if (holdEntity) {
+      this._clearingHold = true;
+      this._holdSnapshotState = holdEntity.state;
+      this._holdSnapshotEndDate = holdEntity.attributes.end_date || null;
+      this._holdSnapshotEndTime = holdEntity.attributes.end_time || null;
+    }
+
     // Step 1: Press the HomeKit clear hold button on the thermostat
     this._hass.callService('button', 'press', {
       entity_id: this.config.clear_hold_entity
@@ -1448,7 +1493,10 @@ class EcobeeBuzzCard extends HTMLElement {
     // at catching it quickly. If missed, boost polling retries every 60s.
     setTimeout(() => this.triggerRefreshNow(), 20000);
 
-    // Show immediate visual feedback while waiting for data to sync
+    // Grey out the button and disable interaction until hold status changes
+    const holdBtn = this.shadowRoot.getElementById('hold-status-btn');
+    if (holdBtn) holdBtn.className = 'hold-status-btn clearing';
+
     const holdText = this.shadowRoot.getElementById('hold-mode-text');
     if (holdText) {
       holdText.innerHTML = '<span class="hold-line1">CLEARING...</span>';
