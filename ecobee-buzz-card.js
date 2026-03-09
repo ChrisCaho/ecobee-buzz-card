@@ -1869,7 +1869,15 @@ class EcobeeBuzzCard extends HTMLElement {
   handleBottomButton(index) {
     const button = this.config.bottom_buttons[index];
     if (!button) return;
-    
+
+    // Handle history action (navigate to 72h history graph)
+    if (button.tap_action && button.tap_action.action === 'history') {
+      const start = new Date(Date.now() - 72*60*60*1000).toISOString();
+      window.history.pushState(null, '', `/history?entity_id=${button.entity}&start_date=${start}`);
+      window.dispatchEvent(new Event('location-changed', { bubbles: true, composed: true }));
+      return;
+    }
+
     // Handle more-info action (opens entity popup)
     if (button.tap_action && button.tap_action.action === 'more-info') {
       const event = new Event('hass-more-info', {
@@ -1880,14 +1888,21 @@ class EcobeeBuzzCard extends HTMLElement {
       this.dispatchEvent(event);
       return;
     }
-    
+
     // Handle call-service action
     if (button.tap_action && button.tap_action.action === 'call-service') {
       const serviceParts = button.tap_action.service.split('.');
       this._hass.callService(serviceParts[0], serviceParts[1], button.tap_action.service_data || {});
       return;
     }
-    
+
+    // Handle navigate action
+    if (button.tap_action && button.tap_action.action === 'navigate') {
+      window.history.pushState(null, '', button.tap_action.navigation_path);
+      window.dispatchEvent(new Event('location-changed', { bubbles: true, composed: true }));
+      return;
+    }
+
     // Default: toggle the entity
     if (button.entity) {
       const entity = this._hass.states[button.entity];
