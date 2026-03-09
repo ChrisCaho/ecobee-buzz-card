@@ -1,4 +1,4 @@
-const ECOBEE_BUZZ_CARD_VERSION = '2.1.8';
+const ECOBEE_BUZZ_CARD_VERSION = '2.1.9';
 console.log(`Ecobee Buzz Card v${ECOBEE_BUZZ_CARD_VERSION}: Script loading started...`);
 
 class EcobeeBuzzCard extends HTMLElement {
@@ -1393,32 +1393,84 @@ class EcobeeBuzzCard extends HTMLElement {
     return `${days} day${days !== 1 ? 's' : ''}`;
   }
 
+  // ---------------------------------------------------------------------------
+  // Clear Hold — Data Update Timing
+  // ---------------------------------------------------------------------------
+  // IMPORTANT: BuzzBridge data is NOT real-time. Unlike the HomeKit climate
+  // entity (which updates temperature, HVAC mode, etc. locally in near
+  // real-time), BuzzBridge pulls data from the beestat.io API, which in turn
+  // syncs from ecobee's cloud servers. This means there is an inherent delay
+  // chain when something changes on the thermostat:
+  //
+  //   1. User clears hold via HomeKit button  (~instant)
+  //   2. ecobee cloud registers the change    (~5-30 seconds)
+  //   3. beestat.io syncs from ecobee         (~up to 3 minutes, server-side cache)
+  //   4. BuzzBridge polls from beestat         (default every 5 min, boost every 60s)
+  //   5. Hold status sensor updates in HA      (~instant after step 4)
+  //
+  // Total delay can be anywhere from ~30 seconds to ~8 minutes depending on
+  // where each system is in its sync cycle. There is no way to force beestat
+  // to update faster — it has a server-side cache of approximately 3 minutes.
+  //
+  // Strategy to minimize perceived delay:
+  //   a) Immediately activate boost polling (60s intervals for 60 min) so
+  //      BuzzBridge checks beestat frequently instead of every 5 minutes
+  //   b) After 20 seconds, trigger a one-time full refresh — this gives
+  //      ecobee and beestat time to sync, and catches the change on the
+  //      first available window
+  //   c) Even if the 20s refresh misses it, boost polling continues every
+  //      60 seconds and will pick it up on a subsequent cycle
+  //
+  // The "CLEARING..." text shows immediately as visual feedback so the user
+  // knows the action was received, even though the hold status sensor may
+  // take up to a few minutes to reflect the change.
+  // ---------------------------------------------------------------------------
+
   clearHold() {
     const overlay = this.shadowRoot.getElementById('hold-confirm-overlay');
     if (overlay) overlay.classList.remove('visible');
 
     if (!this._hass || !this.config.clear_hold_entity) return;
 
-    // Press clear hold button
+    // Step 1: Press the HomeKit clear hold button on the thermostat
     this._hass.callService('button', 'press', {
       entity_id: this.config.clear_hold_entity
     });
 
-    // Immediate refresh to pick up the change
-    this.triggerRefreshNow();
+    // Step 2: Activate BuzzBridge boost polling (every 60s for 60 min)
+    // This ensures frequent checks against beestat so we catch the
+    // change as soon as beestat's cache refreshes
+    this.triggerBoostPolling();
 
-    // Refresh again after 5 seconds to catch delayed state updates
-    setTimeout(() => this.triggerRefreshNow(), 5000);
+    // Step 3: After 20 seconds, trigger a full one-time data refresh
+    // 20s allows time for ecobee cloud to register the change and for
+    // beestat's cache to potentially expire — this is our best-case shot
+    // at catching it quickly. If missed, boost polling retries every 60s.
+    setTimeout(() => this.triggerRefreshNow(), 20000);
 
-    // Briefly show "Clearing..." feedback
+    // Show immediate visual feedback while waiting for data to sync
     const holdText = this.shadowRoot.getElementById('hold-mode-text');
     if (holdText) {
       holdText.innerHTML = '<span class="hold-line1">CLEARING...</span>';
     }
   }
 
+  triggerBoostPolling() {
+    if (!this._hass || !this.config.boost_polling_entity) return;
+    // Activates BuzzBridge fast polling — switches from the default 5-min
+    // interval to every 60 seconds for 60 minutes, then auto-reverts.
+    // Pressing again while already boosted resets the 60-minute timer.
+    this._hass.callService('button', 'press', {
+      entity_id: this.config.boost_polling_entity
+    });
+  }
+
   triggerRefreshNow() {
     if (!this._hass || !this.config.refresh_now_entity) return;
+    // Triggers an immediate one-time refresh of ALL BuzzBridge data
+    // (both fast and slow poll data) without changing polling intervals.
+    // Note: This fetches whatever beestat currently has cached — if
+    // beestat hasn't synced from ecobee yet, the data will be stale.
     this._hass.callService('button', 'press', {
       entity_id: this.config.refresh_now_entity
     });

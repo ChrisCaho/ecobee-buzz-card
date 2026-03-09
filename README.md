@@ -9,6 +9,12 @@ Forked from [HA Total Climate Card](https://github.com/Mystic369/ha-total-climat
 
 ## What's Changed (from original)
 
+### v2.1.9 — Improved Clear Hold Responsiveness
+- **Boost polling on clear hold** — clearing a hold now immediately activates BuzzBridge boost polling (every 60s for 60min) so the integration checks for changes frequently instead of waiting for the default 5-minute poll cycle
+- **Delayed full refresh** — a full one-time data refresh fires 20 seconds after clearing the hold, giving ecobee's cloud and beestat's server-side cache (~3 min) time to sync the change
+- **Boost as safety net** — even if the 20-second refresh doesn't catch it (beestat cache hasn't expired yet), boost polling retries every 60 seconds and will pick up the cleared hold on a subsequent cycle
+- **Note on timing**: BuzzBridge data is **not real-time** — it relies on the beestat.io API which syncs from ecobee's cloud servers with a ~3-minute server-side cache. Unlike HomeKit climate entities (which update locally in near real-time), hold status changes can take 30 seconds to several minutes to propagate through the ecobee → beestat → BuzzBridge chain. The "CLEARING..." indicator shows immediately as visual feedback while the data syncs in the background
+
 ### v2.1.8 — Hold Status & BuzzBridge Integration
 - **Hold status button** below center controls — shows "PROGRAM" (green) when following schedule, or "HOLD" with duration (yellow) when a hold is active
 - **Clear hold with confirmation** — tap the hold button to clear hold and resume schedule, with YES/Cancel confirmation dialog
