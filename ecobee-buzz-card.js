@@ -306,6 +306,7 @@ class EcobeeBuzzCard extends HTMLElement {
         }
         
         .temp-display {
+          flex: 1;
           background: linear-gradient(165deg, rgba(10,25,50,0.7) 0%, rgba(5,15,35,0.85) 100%);
           border-radius: 12px;
           padding: 14px;
@@ -317,6 +318,7 @@ class EcobeeBuzzCard extends HTMLElement {
         }
 
         .outdoor-display {
+          flex: 1;
           background: linear-gradient(165deg, rgba(15,35,65,0.7) 0%, rgba(10,25,50,0.85) 100%);
           border-radius: 12px;
           padding: 14px;
@@ -386,6 +388,7 @@ class EcobeeBuzzCard extends HTMLElement {
         .mode-fan-controls {
           display: flex;
           gap: 8px;
+          margin-top: auto;
         }
         
         .mode-fan-btn {
@@ -641,7 +644,7 @@ class EcobeeBuzzCard extends HTMLElement {
           display: flex;
           flex-direction: column;
           gap: 8px;
-          justify-content: center;
+          margin-top: auto;
           align-items: stretch;
         }
         
