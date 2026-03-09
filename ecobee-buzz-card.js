@@ -122,12 +122,16 @@ class EcobeeBuzzCard extends HTMLElement {
           :host {
             min-width: 0;
           }
-          
+
           .main-content {
             grid-template-columns: 1fr !important;
             gap: 10px;
           }
-          
+
+          .right-section {
+            display: contents;
+          }
+
           .side-controls {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -295,6 +299,7 @@ class EcobeeBuzzCard extends HTMLElement {
         }
         
         .temp-section {
+          grid-column: 1;
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -554,6 +559,7 @@ class EcobeeBuzzCard extends HTMLElement {
         }
 
         .controls {
+          grid-column: 2;
           display: flex;
           flex-direction: column;
           align-items: stretch;
@@ -624,6 +630,13 @@ class EcobeeBuzzCard extends HTMLElement {
           transform: scale(0.95);
         }
         
+        .right-section {
+          grid-column: 3;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
         .side-controls {
           display: flex;
           flex-direction: column;
@@ -931,19 +944,6 @@ class EcobeeBuzzCard extends HTMLElement {
               </div>
             </div>
 
-            <div class="outdoor-display" id="outdoor-display">
-              <div class="outdoor-section">
-                <div class="outdoor-temp">
-                  <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
-                </div>
-                <div class="detail-group">
-                  <div class="section-label" id="outdoor-label">Outdoor</div>
-                  <div class="detail-line" id="outdoor-humidity">Humidity: --%</div>
-                  <div class="detail-line" id="outdoor-feels-like">Feels Like: --°</div>
-                </div>
-              </div>
-            </div>
-            
             <div class="mode-fan-controls">
               <button class="mode-fan-btn active" id="mode-btn">
                 <div class="mode-fan-btn-label">MODE</div>
@@ -1000,7 +1000,21 @@ class EcobeeBuzzCard extends HTMLElement {
             </div>
           </div>
           
-          <div class="side-controls" id="side-controls"></div>
+          <div class="right-section">
+            <div class="outdoor-display" id="outdoor-display">
+              <div class="outdoor-section">
+                <div class="outdoor-temp">
+                  <span id="outdoor-temp">--</span><span class="temp-unit" style="font-size: 14px;">°</span>
+                </div>
+                <div class="detail-group">
+                  <div class="section-label" id="outdoor-label">Outdoor</div>
+                  <div class="detail-line" id="outdoor-humidity">Humidity: --%</div>
+                  <div class="detail-line" id="outdoor-feels-like">Feels Like: --°</div>
+                </div>
+              </div>
+            </div>
+            <div class="side-controls" id="side-controls"></div>
+          </div>
         </div>
         
         <div class="bottom-nav" id="bottom-nav"></div>
